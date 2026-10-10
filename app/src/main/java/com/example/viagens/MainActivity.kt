@@ -1,5 +1,6 @@
 package com.example.viagens
 
+import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -10,19 +11,35 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
 import com.example.viagens.ui.theme.ViagensTheme
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
+
+private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "configuracoes_viagens")
+private val NOME_MOTORISTA = stringPreferencesKey("nome_motorista")
 
 class Viagem(
     val data: String,
@@ -58,6 +75,19 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun ControleViagens() {
 
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
+    val nomeMotoristaSalvo by context.dataStore.data
+        .map { preferences -> preferences[NOME_MOTORISTA] ?: "" }
+        .collectAsState(initial = "")
+
+    var nomeMotoristaInput by remember { mutableStateOf("") }
+
+    LaunchedEffect(nomeMotoristaSalvo) {
+        nomeMotoristaInput = nomeMotoristaSalvo
+    }
+
     var data by remember { mutableStateOf("") }
     var kmInicial by remember { mutableStateOf("") }
     var kmFinal by remember { mutableStateOf("") }
@@ -82,12 +112,54 @@ fun ControleViagens() {
                 .verticalScroll(rememberScrollState())
         ) {
 
-            Text("Controle de Viagens")
+            Text(
+                text = "Controle de Viagens",
+                style = MaterialTheme.typography.titleLarge
+            )
+
+            Text(
+                text = "Motorista",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(top = 12.dp, bottom = 4.dp)
+            )
+
+            if (nomeMotoristaSalvo.isNotBlank()) {
+                Text(
+                    text = "Motorista atual: $nomeMotoristaSalvo",
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
+
+            TextField(
+                value = nomeMotoristaInput,
+                onValueChange = { nomeMotoristaInput = it },
+                label = { Text("Nome do motorista") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp)
+            )
+
+            Button(
+                onClick = {
+                    scope.launch {
+                        context.dataStore.edit { preferences ->
+                            preferences[NOME_MOTORISTA] = nomeMotoristaInput
+                        }
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp)
+            ) {
+                Text("Salvar nome do motorista")
+            }
+
+            HorizontalDivider(modifier = Modifier.padding(bottom = 16.dp))
 
             Text(
                 text = "Cadastre os dados da viagem",
                 modifier = Modifier.padding(
-                    top = 4.dp,
                     bottom = 16.dp
                 )
             )
