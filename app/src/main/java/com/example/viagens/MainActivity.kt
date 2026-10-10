@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -22,6 +23,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.example.viagens.ui.theme.ViagensTheme
 
 class Viagem(
@@ -58,6 +63,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun ControleViagens() {
 
+    // Variáveis de estado preservadas no escopo superior para não perder os dados na navegação
     var data by remember { mutableStateOf("") }
     var kmInicial by remember { mutableStateOf("") }
     var kmFinal by remember { mutableStateOf("") }
@@ -70,115 +76,204 @@ fun ControleViagens() {
         mutableStateListOf<Viagem>()
     }
 
+    // NavController: Objeto responsável por gerenciar a navegação, a pilha de telas e a troca de rotas
+    val navController = rememberNavController()
+
     Scaffold(
         modifier = Modifier.fillMaxSize()
     ) { innerPadding ->
 
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState())
+        // NavHost: Container que associa as rotas das telas aos seus respectivos componentes Composables
+        NavHost(
+            navController = navController,
+            startDestination = "lista",
+            modifier = Modifier.padding(innerPadding)
         ) {
-
-            Text("Controle de Viagens")
-
-            Text(
-                text = "Cadastre os dados da viagem",
-                modifier = Modifier.padding(
-                    top = 4.dp,
-                    bottom = 16.dp
+            // Rota para a tela de listagem de viagens
+            composable("lista") {
+                TelaListaViagens(
+                    navController = navController,
+                    viagens = viagens
                 )
-            )
+            }
 
-            FormularioViagem(
-                data = data,
-                kmInicial = kmInicial,
-                kmFinal = kmFinal,
-                litros = litros,
-                combustivel = combustivel,
-                pedagio = pedagio,
-                valorCombustivel = valorCombustivel,
+            // Rota para a tela de cadastro de viagens
+            composable("cadastro") {
+                TelaCadastroViagem(
+                    navController = navController,
+                    data = data,
+                    kmInicial = kmInicial,
+                    kmFinal = kmFinal,
+                    litros = litros,
+                    combustivel = combustivel,
+                    pedagio = pedagio,
+                    valorCombustivel = valorCombustivel,
+                    onDataChange = { data = it },
+                    onKmInicialChange = { kmInicial = it },
+                    onKmFinalChange = { kmFinal = it },
+                    onLitrosChange = { litros = it },
+                    onCombustivelChange = { combustivel = it },
+                    onPedagioChange = { pedagio = it },
+                    onValorCombustivelChange = { valorCombustivel = it },
+                    onCadastrar = {
+                        val kmInicialNumero = kmInicial.toDoubleOrNull()
+                        val kmFinalNumero = kmFinal.toDoubleOrNull()
+                        val litrosNumero = litros.toDoubleOrNull()
+                        val pedagioNumero = pedagio.toDoubleOrNull()
+                        val valorCombustivelNumero = valorCombustivel.toDoubleOrNull()
 
-                onDataChange = { data = it },
-                onKmInicialChange = { kmInicial = it },
-                onKmFinalChange = { kmFinal = it },
-                onLitrosChange = { litros = it },
-                onCombustivelChange = { combustivel = it },
-                onPedagioChange = { pedagio = it },
-                onValorCombustivelChange = {
-                    valorCombustivel = it
-                },
+                        if (
+                            data.isNotBlank() &&
+                            combustivel.isNotBlank() &&
+                            kmInicialNumero != null &&
+                            kmFinalNumero != null &&
+                            litrosNumero != null &&
+                            pedagioNumero != null &&
+                            valorCombustivelNumero != null &&
+                            kmFinalNumero >= kmInicialNumero &&
+                            litrosNumero > 0 &&
+                            pedagioNumero >= 0 &&
+                            valorCombustivelNumero >= 0
+                        ) {
+                            val viagem = Viagem(
+                                data = data,
+                                kmInicial = kmInicialNumero,
+                                kmFinal = kmFinalNumero,
+                                litros = litrosNumero,
+                                combustivel = combustivel,
+                                pedagio = pedagioNumero,
+                                valorCombustivel = valorCombustivelNumero
+                            )
 
-                onCadastrar = {
+                            viagens.add(viagem)
 
-                    val kmInicialNumero = kmInicial.toDoubleOrNull()
-                    val kmFinalNumero = kmFinal.toDoubleOrNull()
-                    val litrosNumero = litros.toDoubleOrNull()
-                    val pedagioNumero = pedagio.toDoubleOrNull()
-                    val valorCombustivelNumero =
-                        valorCombustivel.toDoubleOrNull()
+                            data = ""
+                            kmInicial = ""
+                            kmFinal = ""
+                            litros = ""
+                            combustivel = ""
+                            pedagio = ""
+                            valorCombustivel = ""
 
-                    if (
-                        data.isNotBlank() &&
-                        combustivel.isNotBlank() &&
-                        kmInicialNumero != null &&
-                        kmFinalNumero != null &&
-                        litrosNumero != null &&
-                        pedagioNumero != null &&
-                        valorCombustivelNumero != null &&
-                        kmFinalNumero >= kmInicialNumero &&
-                        litrosNumero > 0 &&
-                        pedagioNumero >= 0 &&
-                        valorCombustivelNumero >= 0
-                    ) {
-                        val viagem = Viagem(
-                            data = data,
-                            kmInicial = kmInicialNumero,
-                            kmFinal = kmFinalNumero,
-                            litros = litrosNumero,
-                            combustivel = combustivel,
-                            pedagio = pedagioNumero,
-                            valorCombustivel = valorCombustivelNumero
-                        )
-
-                        viagens.add(viagem)
-
-                        data = ""
-                        kmInicial = ""
-                        kmFinal = ""
-                        litros = ""
-                        combustivel = ""
-                        pedagio = ""
-                        valorCombustivel = ""
+                            navController.navigateUp()
+                        }
                     }
-                }
-            )
-
-            ListaViagens(viagens)
-
-            var totalKm = 0.0
-            var totalGasto = 0.0
-            var totalLitros = 0.0
-
-            for (viagem in viagens) {
-                totalKm += viagem.calcularDistancia()
-                totalGasto += viagem.calcularCusto()
-                totalLitros += viagem.litros
+                )
             }
+        }
+    }
+}
 
-            val mediaKmLitro = if (totalLitros > 0) {
-                totalKm / totalLitros
-            } else {
-                0.0
-            }
+@Composable
+fun TelaListaViagens(
+    navController: NavController,
+    viagens: List<Viagem>
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState())
+    ) {
+        Text(
+            text = "Controle de Viagens",
+            style = MaterialTheme.typography.headlineMedium,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
 
-            ResumoViagens(
-                totalKm = totalKm,
-                totalGasto = totalGasto,
-                mediaKmLitro = mediaKmLitro
-            )
+        // Botão que navega para a rota de cadastro utilizando o NavController
+        Button(
+            onClick = { navController.navigate("cadastro") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp)
+        ) {
+            Text("Cadastrar Nova Viagem")
+        }
+
+        ListaViagens(viagens)
+
+        var totalKm = 0.0
+        var totalGasto = 0.0
+        var totalLitros = 0.0
+
+        for (viagem in viagens) {
+            totalKm += viagem.calcularDistancia()
+            totalGasto += viagem.calcularCusto()
+            totalLitros += viagem.litros
+        }
+
+        val mediaKmLitro = if (totalLitros > 0) {
+            totalKm / totalLitros
+        } else {
+            0.0
+        }
+
+        ResumoViagens(
+            totalKm = totalKm,
+            totalGasto = totalGasto,
+            mediaKmLitro = mediaKmLitro
+        )
+    }
+}
+
+@Composable
+fun TelaCadastroViagem(
+    navController: NavController,
+    data: String,
+    kmInicial: String,
+    kmFinal: String,
+    litros: String,
+    combustivel: String,
+    pedagio: String,
+    valorCombustivel: String,
+    onDataChange: (String) -> Unit,
+    onKmInicialChange: (String) -> Unit,
+    onKmFinalChange: (String) -> Unit,
+    onLitrosChange: (String) -> Unit,
+    onCombustivelChange: (String) -> Unit,
+    onPedagioChange: (String) -> Unit,
+    onValorCombustivelChange: (String) -> Unit,
+    onCadastrar: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState())
+    ) {
+        Text(
+            text = "Cadastre os dados da viagem",
+            style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+
+        FormularioViagem(
+            data = data,
+            kmInicial = kmInicial,
+            kmFinal = kmFinal,
+            litros = litros,
+            combustivel = combustivel,
+            pedagio = pedagio,
+            valorCombustivel = valorCombustivel,
+            onDataChange = onDataChange,
+            onKmInicialChange = onKmInicialChange,
+            onKmFinalChange = onKmFinalChange,
+            onLitrosChange = onLitrosChange,
+            onCombustivelChange = onCombustivelChange,
+            onPedagioChange = onPedagioChange,
+            onValorCombustivelChange = onValorCombustivelChange,
+            onCadastrar = onCadastrar
+        )
+
+        // Botão Voltar para retornar à tela anterior chamando navigateUp()
+        Button(
+            onClick = { navController.navigateUp() },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp)
+        ) {
+            Text("Voltar")
         }
     }
 }
